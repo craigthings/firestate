@@ -14,16 +14,8 @@ export default class TodoDocument extends FirestoreDocument<Todo> {
   static schema = todoSchema;
   public parent: Todos;
 
-  constructor(parent: Todos, id: string, schema: any, data: Todo) {
-    super(parent, id, todoSchema, data);
-  }
-
   toggleDone = () => {
-    if (this.data.done) {
-      this.update({ done: false });
-    } else {
-      this.update({ done: true });
-    }
+    this.update({ done: !this.data.done });
   };
 
   setName = (name: string) => {

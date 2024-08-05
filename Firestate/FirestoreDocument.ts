@@ -22,10 +22,11 @@ export default class FirestoreDocument<T> {
   public originalData: T = {} as T;
   public synced: boolean = true;
 
-  constructor(
+  static schema: z.ZodType<any>;
+
+  protected constructor(
     parent: FirestoreCollection<any, any>,
     id: string,
-    schema: z.ZodType<T>,
     data: T | null = null
   ) {
     makeObservable(this, {
@@ -42,12 +43,21 @@ export default class FirestoreDocument<T> {
     this.db = parent.db;
     this.path = `${parent.path}/${id}`;
     this.id = id;
-    this.schema = schema;
+    this.schema = (this.constructor as typeof FirestoreDocument).schema;
 
     if (data) {
       this._updateData(data);
       this.originalData = { ...data };
     }
+  }
+
+  static create<T, K extends FirestoreDocument<T>>(
+    this: new (...args: any[]) => K,
+    parent: FirestoreCollection<any, any>,
+    id: string,
+    data: T | null = null
+  ): K {
+    return new this(parent, id, data);
   }
 
   protected subscribe() {

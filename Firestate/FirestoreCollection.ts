@@ -32,27 +32,28 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   public children: Array<K> = [];
   public docs: Array<T> = [];
   public subscribed: boolean = false;
+  protected DocumentClass: {
+    new (parent: FirestoreCollection<T, K>, id: string, data: T | null): K;
+    create(parent: FirestoreCollection<T, K>, id: string, data: T | null): K;
+    schema: z.ZodType<T>;
+  };
   public get collectionRef() {
     return collection(this.db, this.path);
   }
   public query = (collectionRef: CollectionReference<DocumentData>) => {
     return query(collectionRef);
   };
-  private childClass: new (...args: any[]) => K;
 
   constructor(
     parent: FirestoreDocument<any> | FirestoreDatabase,
     path: string,
-    schema: z.ZodType<T>,
-    childClass?: new (...args: any[]) => K
+    DocumentClass: typeof FirestoreDocument<T>
   ) {
     this.parent = parent;
     this.path = `${parent.path}/${path}`;
     this.db = parent.db;
-    this.schema = schema;
-    this.childClass = childClass
-      ? childClass
-      : (FirestoreDocument as new (...args: any[]) => K);
+    this.DocumentClass = DocumentClass as any;
+    this.schema = DocumentClass.schema;
 
     makeObservable(this, {
       docs: observable,
@@ -97,12 +98,7 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     snapshot.docChanges().forEach((change) => {
       if (change.type === "added") {
         this.children.push(
-          new this.childClass(
-            this,
-            change.doc.id,
-            this.schema,
-            change.doc.data()
-          )
+          this.DocumentClass.create(this, change.doc.id, change.doc.data() as T)
         );
       }
       if (change.type === "modified") {
@@ -127,7 +123,7 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     this.docs = data;
     snapshot.docs.forEach((doc) => {
       this.children.push(
-        new this.childClass(this, doc.id, this.schema, doc.data())
+        this.DocumentClass.create(this, doc.id, doc.data() as T)
       );
     });
     resolve(this.children);
@@ -137,7 +133,7 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     try {
       this.schema.parse(data);
       const docRef = await addDoc(collection(this.db, this.path), data);
-      return new FirestoreDocument<T>(this, docRef.id, this.schema);
+      return this.DocumentClass.create(this, docRef.id, data);
     } catch (error) {
       throw new Error(error);
     }

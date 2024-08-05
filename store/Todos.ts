@@ -16,7 +16,7 @@ export default class Todos extends FirestoreCollection<Todo, TodoDocument> {
   };
 
   constructor(parent: FirestoreDatabase | FirestoreDocument<any>) {
-    super(parent, "todos", todoSchema, TodoDocument);
+    super(parent, "todos", TodoDocument);
   }
 
   create = (name: string, index: number, done: boolean) => {
