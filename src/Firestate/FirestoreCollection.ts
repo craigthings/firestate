@@ -20,14 +20,13 @@ import {
   orderBy
 } from "firebase/firestore";
 import { observable, IObservableArray, action, makeObservable } from "mobx";
-import * as z from "zod";
 
 export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   protected parent:
     | FirestoreDocument<any>
     | FirestoreCollection<any, any>
     | FirestoreDatabase;
-  protected schema: z.ZodType<T>;
+  protected schema: new () => T;
   public db: Firestore;
   public path: string;
   public children: Array<K> = [];
@@ -36,7 +35,7 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   protected DocumentClass: {
     new (parent: FirestoreCollection<any, any>, id: string, data: T | null): K;
     create(parent: FirestoreCollection<any, any>, id: string, data: T | null): K;
-    schema: z.ZodType<T>;
+    schema: new () => T;
   };
   public get collectionRef() {
     return collection(this.db, this.path);
@@ -131,11 +130,11 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     resolve(this.children);
   };
 
-  public async add(data: T) {
+  public async add(data: Partial<T>) {
     try {
-      this.schema.parse(data);
-      const docRef = await addDoc(collection(this.db, this.path), data as WithFieldValue<DocumentData>);
-      return this.DocumentClass.create(this, docRef.id, data);
+      const validatedData = { ...new this.schema(), ...data };
+      const docRef = await addDoc(collection(this.db, this.path), validatedData as WithFieldValue<DocumentData>);
+      return this.DocumentClass.create(this, docRef.id, validatedData);
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : String(error));
     }
@@ -149,10 +148,10 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     }
   }
 
-  public async update(id: string, data: T) {
+  public async update(id: string, data: Partial<T>) {
     try {
-      this.schema.parse(data);
-      await updateDoc<any>(doc(this.db, this.path, id), data);
+      const validatedData = { ...new this.schema(), ...data };
+      await updateDoc<any>(doc(this.db, this.path, id), validatedData);
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : String(error));
     }

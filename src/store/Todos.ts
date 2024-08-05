@@ -1,7 +1,6 @@
 import FirestoreDatabase from "../Firestate/FirestoreDatabase";
 import FirestoreCollection from "../Firestate/FirestoreCollection";
-import { TodoSchema } from "./Todo";
-import TodoDocument from "./Todo";
+import { TodoDocument, TodoDefaults } from "./Todo";
 import {
   CollectionReference,
   DocumentData,
@@ -9,7 +8,7 @@ import {
   query
 } from "firebase/firestore";
 
-export default class Todos extends FirestoreCollection<TodoSchema, TodoDocument> {
+export default class Todos extends FirestoreCollection<TodoDefaults, TodoDocument> {
   static documentClass = TodoDocument;
   static collectionName = "todos";
 

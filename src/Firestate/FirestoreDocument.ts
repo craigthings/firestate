@@ -10,19 +10,18 @@ import {
 import { getFirestore, Firestore } from "firebase/firestore";
 import FirestoreCollection from "./FirestoreCollection";
 import { observable, action, makeObservable, runInAction } from "mobx";
-import * as z from "zod";
 
 export default class FirestoreDocument<T> {
   public parent: FirestoreCollection<any, any>;
   public db: Firestore;
   public id: string = "";
-  public schema: z.ZodType<T>;
+  public schema: new () => any;
   public path: string = "";
   public data: T = {} as T;
   public originalData: T = {} as T;
   public synced: boolean = true;
 
-  static schema: z.ZodType<any>;
+  static schema: new () => any;
 
   constructor(
     parent: FirestoreCollection<any, any>,
@@ -43,11 +42,15 @@ export default class FirestoreDocument<T> {
     this.db = parent.db;
     this.path = `${parent.path}/${id}`;
     this.id = id;
-    this.schema = (this.constructor as typeof FirestoreDocument).schema;
+    this.schema = new ((this.constructor as typeof FirestoreDocument).schema)();
 
     if (data) {
       this._updateData(data);
       this.originalData = { ...data };
+    } else {
+      const schemaInstance = new this.schema();
+      this._updateData(schemaInstance);
+      this.originalData = { ...schemaInstance };
     }
   }
 
@@ -63,7 +66,6 @@ export default class FirestoreDocument<T> {
   protected subscribe() {
     this.unsubscribe = onSnapshot(doc(this.db, this.path), (snapshot) => {
       let data = snapshot.data() as T;
-      this.schema.parse(data);
       runInAction(() => {
         this.data = data;
         this.originalData = { ...data };
@@ -72,10 +74,14 @@ export default class FirestoreDocument<T> {
     });
   }
 
-  public _updateData = (data: T) => {
-    this.schema.parse(data);
+  protected validateData(data: Partial<T>): T {
+    return { ...this.schema, ...data } as T;
+  }
+
+  public _updateData = (data: Partial<T>) => {
+    const validatedData = this.validateData(data);
     runInAction(() => {
-      this.data = data;
+      this.data = validatedData;
     });
   };
 
@@ -89,8 +95,8 @@ export default class FirestoreDocument<T> {
 
   public async syncLocal() {
     try {
-      this.schema.parse(this.data);
-      await updateDoc<any>(doc(this.db, this.path), this.data);
+      const validatedData = this.validateData(this.data);
+      await updateDoc<any>(doc(this.db, this.path), validatedData);
       runInAction(() => {
         this.synced = true;
       });
@@ -107,9 +113,8 @@ export default class FirestoreDocument<T> {
   }
 
   public async update(data: Partial<T>) {
-    let updatedData = { ...this.data, ...data };
+    let updatedData = this.validateData({ ...this.data, ...data });
     try {
-      this.schema.parse(updatedData);
       await updateDoc<any>(doc(this.db, this.path), data);
       runInAction(() => {
         this._updateData(updatedData);

@@ -28,16 +28,14 @@ Create a schema and document class for your data:
 import * as z from "zod";
 import FirestoreDocument from "./Firestate/FirestoreDocument";
 
-let schema = z.object({
-  name: z.string(),
-  index: z.number(),
-  done: z.boolean(),
-});
+export class TodoSchema {
+  name = "";
+  index = 0;
+  done = false;
+}
 
-export type TodoSchema = z.infer<typeof schema>;
-
-export default class TodoDocument extends FirestoreDocument<TodoSchema> {
-  static schema = schema;
+export class TodoDocument extends FirestoreDocument<TodoSchema> {
+  static schema = TodoDefaults;
   public parent: Todos;
 }
 ```
@@ -48,11 +46,11 @@ Define a collection class for your documents:
 
 ```ts
 import FirestoreCollection from "./Firestate/FirestoreCollection";
+import { TodoDocument, TodoSchema } from "./Todo";
 
-class Todos extends FirestoreCollection<Todo, TodoDocument> {
+export class Todos extends FirestoreCollection<TodoSchema, TodoDocument> {
   static documentClass = TodoDocument;
   static collectionName = "todos";
-}
 ```
 
 ### 4. Set up the root store
