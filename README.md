@@ -1,3 +1,5 @@
+# ⚠ In Development ⚠
+
 # Firestate
 
 Firestate is a lightweight library that simplifies working with Firestore in TypeScript projects. It provides a set of classes to manage Firestore collections and documents with type safety and MobX integration.
@@ -25,7 +27,6 @@ const db = getFirestore();
 Create a schema and document class for your data:
 
 ```ts
-import * as z from "zod";
 import FirestoreDocument from "./Firestate/FirestoreDocument";
 
 export class TodoSchema {
@@ -48,9 +49,26 @@ Define a collection class for your documents:
 import FirestoreCollection from "./Firestate/FirestoreCollection";
 import { TodoDocument, TodoSchema } from "./Todo";
 
-export class Todos extends FirestoreCollection<TodoSchema, TodoDocument> {
+export class Todos extends FirestoreCollection<TodoDefaults, TodoDocument> {
   static documentClass = TodoDocument;
   static collectionName = "todos";
+
+  public query = this.createQuery((collectionRef) => {
+    return query(collectionRef, orderBy("index"));
+  });
+
+  create = (name: string, index: number, done: boolean) => {
+    this.add({ name, index, done });
+  };
+
+  remove = async (id: string) => {
+    await this.get(id).delete();
+  };
+
+  getByIndex = (index: number) => {
+    return this.children.find((todo) => todo.data.index === index);
+  };
+}
 ```
 
 ### 4. Set up the root store

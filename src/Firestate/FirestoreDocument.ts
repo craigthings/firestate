@@ -20,6 +20,7 @@ export default class FirestoreDocument<T> {
   public data: T = {} as T;
   public originalData: T = {} as T;
   public synced: boolean = true;
+  public latestRemoteData: T | null = null;
 
   static schema: new () => any;
 
@@ -32,10 +33,12 @@ export default class FirestoreDocument<T> {
       data: observable,
       originalData: observable,
       synced: observable,
+      latestRemoteData: observable,
       updateLocal: action,
       syncLocal: action,
       revertLocal: action,
-      _updateData: action
+      _updateData: action,
+      syncRemote: action
     });
 
     this.parent = parent;
@@ -66,11 +69,7 @@ export default class FirestoreDocument<T> {
   protected subscribe() {
     this.unsubscribe = onSnapshot(doc(this.db, this.path), (snapshot) => {
       let data = snapshot.data() as T;
-      runInAction(() => {
-        this.data = data;
-        this.originalData = { ...data };
-        this.synced = true;
-      });
+      this._updateData(data);
     });
   }
 
@@ -81,7 +80,11 @@ export default class FirestoreDocument<T> {
   public _updateData = (data: Partial<T>) => {
     const validatedData = this.validateData(data);
     runInAction(() => {
-      this.data = validatedData;
+      if (this.synced) {
+        this.data = validatedData;
+        this.originalData = { ...validatedData };
+      }
+      this.latestRemoteData = validatedData;
     });
   };
 
@@ -106,8 +109,11 @@ export default class FirestoreDocument<T> {
 
   public revertLocal() {
     runInAction(() => {
-      this.data = { ...this.originalData };
-      this.synced = true;
+      if (this.latestRemoteData && this.synced === false) {
+        this.data = this.latestRemoteData;
+        this.originalData = this.latestRemoteData;
+        this.synced = true;
+      }
     });
   }
 
@@ -130,6 +136,17 @@ export default class FirestoreDocument<T> {
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : String(error));
     }
+  }
+
+  public syncRemote() {
+    runInAction(() => {
+      if (this.latestRemoteData) {
+        this.data = { ...this.latestRemoteData };
+        this.originalData = { ...this.latestRemoteData };
+        this.synced = true;
+        this.latestRemoteData = null;
+      }
+    });
   }
 
   public unsubscribe() {
