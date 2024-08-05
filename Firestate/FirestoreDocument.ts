@@ -95,7 +95,7 @@ export default class FirestoreDocument<T> {
         this.synced = true;
       });
     } catch (error) {
-      throw new Error(error);
+      throw new Error(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -106,17 +106,17 @@ export default class FirestoreDocument<T> {
     });
   }
 
-  public async update(data: T) {
-    let currentData = Object.assign({}, this.data);
-    let updatedData = Object.assign(currentData, data);
+  public async update(data: Partial<T>) {
+    let updatedData = { ...this.data, ...data };
     try {
       this.schema.parse(updatedData);
       await updateDoc<any>(doc(this.db, this.path), data);
       runInAction(() => {
+        this._updateData(updatedData);
         this.synced = true;
       });
     } catch (error) {
-      throw new Error(error);
+      throw new Error(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -124,7 +124,7 @@ export default class FirestoreDocument<T> {
     try {
       await deleteDoc(doc(this.db, this.path));
     } catch (error) {
-      throw new Error(error);
+      throw new Error(error instanceof Error ? error.message : String(error));
     }
   }
 

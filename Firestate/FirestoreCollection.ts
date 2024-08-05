@@ -16,6 +16,7 @@ import {
   query,
   QuerySnapshot,
   DocumentData,
+  WithFieldValue,
   orderBy
 } from "firebase/firestore";
 import { observable, IObservableArray, action, makeObservable } from "mobx";
@@ -104,9 +105,8 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
         );
       }
       if (change.type === "modified") {
-        this.children
-          .find((child) => child.id === change.doc.id)
-          ._updateData(change.doc.data() as T);
+        const child = this.children.find((child) => child.id === change.doc.id);
+        if (child) child._updateData(change.doc.data() as T);
       }
       if (change.type === "removed") {
         this.children = this.children.filter((doc) => doc.id !== change.doc.id);
@@ -134,10 +134,10 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   public async add(data: T) {
     try {
       this.schema.parse(data);
-      const docRef = await addDoc(collection(this.db, this.path), data);
+      const docRef = await addDoc(collection(this.db, this.path), data as WithFieldValue<DocumentData>);
       return this.DocumentClass.create(this, docRef.id, data);
     } catch (error) {
-      throw new Error(error);
+      throw new Error(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -145,7 +145,7 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     try {
       await deleteDoc(doc(this.db, this.path, id));
     } catch (error) {
-      throw new Error(error);
+      throw new Error(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -154,7 +154,7 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
       this.schema.parse(data);
       await updateDoc<any>(doc(this.db, this.path, id), data);
     } catch (error) {
-      throw new Error(error);
+      throw new Error(error instanceof Error ? error.message : String(error));
     }
   }
 
