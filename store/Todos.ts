@@ -1,7 +1,6 @@
 import FirestoreDatabase from "../Firestate/FirestoreDatabase";
 import FirestoreCollection from "../Firestate/FirestoreCollection";
-import FirestoreDocument from "../Firestate/FirestoreDocument";
-import { todoSchema, Todo } from "./Todo";
+import { Todo } from "./Todo";
 import TodoDocument from "./Todo";
 import {
   CollectionReference,
@@ -11,13 +10,12 @@ import {
 } from "firebase/firestore";
 
 export default class Todos extends FirestoreCollection<Todo, TodoDocument> {
+  static documentClass = TodoDocument;
+  static collectionName = "todos";
+
   public query = (collectionRef: CollectionReference<DocumentData>) => {
     return query(collectionRef, orderBy("index"));
   };
-
-  constructor(parent: FirestoreDatabase | FirestoreDocument<any>) {
-    super(parent, "todos", TodoDocument);
-  }
 
   create = (name: string, index: number, done: boolean) => {
     this.add({ name, index, done });

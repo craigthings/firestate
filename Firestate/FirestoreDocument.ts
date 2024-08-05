@@ -24,7 +24,7 @@ export default class FirestoreDocument<T> {
 
   static schema: z.ZodType<any>;
 
-  protected constructor(
+  constructor(
     parent: FirestoreCollection<any, any>,
     id: string,
     data: T | null = null

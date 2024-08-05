@@ -33,8 +33,8 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   public docs: Array<T> = [];
   public subscribed: boolean = false;
   protected DocumentClass: {
-    new (parent: FirestoreCollection<T, K>, id: string, data: T | null): K;
-    create(parent: FirestoreCollection<T, K>, id: string, data: T | null): K;
+    new (parent: FirestoreCollection<any, any>, id: string, data: T | null): K;
+    create(parent: FirestoreCollection<any, any>, id: string, data: T | null): K;
     schema: z.ZodType<T>;
   };
   public get collectionRef() {
@@ -44,16 +44,18 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     return query(collectionRef);
   };
 
+  static documentClass: new (parent: FirestoreCollection<any, any>, id: string, data: any) => FirestoreDocument<any>;
+  static collectionName: string;
+
   constructor(
     parent: FirestoreDocument<any> | FirestoreDatabase,
-    path: string,
-    DocumentClass: typeof FirestoreDocument<T>
+    path?: string
   ) {
     this.parent = parent;
-    this.path = `${parent.path}/${path}`;
+    this.path = `${parent.path}/${path || (this.constructor as typeof FirestoreCollection).collectionName}`;
     this.db = parent.db;
-    this.DocumentClass = DocumentClass as any;
-    this.schema = DocumentClass.schema;
+    this.DocumentClass = (this.constructor as typeof FirestoreCollection).documentClass as any;
+    this.schema = this.DocumentClass.schema;
 
     makeObservable(this, {
       docs: observable,
