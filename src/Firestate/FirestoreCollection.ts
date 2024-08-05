@@ -3,7 +3,8 @@ import FirestoreDatabase from "./FirestoreDatabase";
 import {
   getFirestore,
   Firestore,
-  CollectionReference
+  CollectionReference,
+  DocumentSnapshot,
 } from "firebase/firestore";
 import {
   doc,
@@ -20,6 +21,7 @@ import {
   orderBy
 } from "firebase/firestore";
 import { observable, IObservableArray, action, makeObservable } from "mobx";
+import { Query } from "firebase/firestore";
 
 export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   protected parent:
@@ -40,9 +42,13 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   public get collectionRef() {
     return collection(this.db, this.path);
   }
-  public query = (collectionRef: CollectionReference<DocumentData>) => {
-    return query(collectionRef);
-  };
+  protected createQuery<TQuery extends DocumentData = DocumentData>(
+    queryFn: (collectionRef: CollectionReference<TQuery>) => Query<TQuery>
+  ) {
+    return queryFn;
+  }
+
+  public query = this.createQuery((collectionRef) => query(collectionRef));
 
   static documentClass: new (parent: FirestoreCollection<any, any>, id: string, data: any) => FirestoreDocument<any>;
   static collectionName: string;
@@ -105,7 +111,9 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
       }
       if (change.type === "modified") {
         const child = this.children.find((child) => child.id === change.doc.id);
-        if (child) child._updateData(change.doc.data() as T);
+        if (child) {
+          this.updateDocumentIfNewer(child, change.doc);
+        }
       }
       if (change.type === "removed") {
         this.children = this.children.filter((doc) => doc.id !== change.doc.id);
@@ -113,6 +121,12 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     });
     resolve(this.children);
   };
+
+  private updateDocumentIfNewer(child: K, doc: DocumentSnapshot<DocumentData>) {
+    if (!doc.metadata.hasPendingWrites) {
+      child._updateData(doc.data() as T);
+    }
+  }
 
   initializeData = (
     snapshot: QuerySnapshot<DocumentData>,
