@@ -74,7 +74,7 @@ export default class FirestoreDocument<T> {
     });
   }
 
-  protected validateData(data: Partial<T>): T {
+  public validateData(data: Partial<T>): T {
     return { ...this.schema, ...data } as T;
   }
 
@@ -86,7 +86,6 @@ export default class FirestoreDocument<T> {
   };
 
   public updateLocal = (data: Partial<T>) => {
-    console.log("????");
     runInAction(() => {
       this.data = { ...this.data, ...data };
       this.synced = false;

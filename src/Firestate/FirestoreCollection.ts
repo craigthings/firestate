@@ -5,6 +5,8 @@ import {
   Firestore,
   CollectionReference,
   DocumentSnapshot,
+  WriteBatch,
+  writeBatch,
 } from "firebase/firestore";
 import {
   doc,
@@ -20,7 +22,7 @@ import {
   WithFieldValue,
   orderBy
 } from "firebase/firestore";
-import { observable, IObservableArray, action, makeObservable } from "mobx";
+import { observable, IObservableArray, action, makeObservable, runInAction } from "mobx";
 import { Query } from "firebase/firestore";
 
 export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
@@ -179,6 +181,35 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   public unsubscribe() {
     if (this.unsubscribe) {
       this.unsubscribe();
+    }
+  }
+
+  public async syncLocal() {
+    const MAX_BATCH_SIZE = 500; // Firestore's limit for write operations in a single batch
+    const unsyncedDocs = this.children.filter(doc => !doc.synced);
+    const batches: WriteBatch[] = [];
+
+    for (let i = 0; i < unsyncedDocs.length; i += MAX_BATCH_SIZE) {
+      const batch = writeBatch(this.db);
+      batches.push(batch);
+
+      const batchDocs = unsyncedDocs.slice(i, i + MAX_BATCH_SIZE);
+      for (const document of batchDocs) {
+        const validatedData = document.validateData(document.data);
+        batch.update(doc(this.db, document.path), validatedData as WithFieldValue<DocumentData>);
+      }
+    }
+
+    try {
+      await Promise.all(batches.map(batch => batch.commit()));
+      runInAction(() => {
+        unsyncedDocs.forEach(document => {
+          document.synced = true;
+          document.originalData = { ...document.data };
+        });
+      });
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : String(error));
     }
   }
 }
