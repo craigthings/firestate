@@ -2,16 +2,16 @@ import FirestoreDocument from "../Firestate/FirestoreDocument";
 import * as z from "zod";
 import Todos from "./Todos";
 
-export let todoSchema = z.object({
+let schema = z.object({
   name: z.string(),
   index: z.number(),
   done: z.boolean(),
 });
 
-export type Todo = z.infer<typeof todoSchema>;
+export type TodoSchema = z.infer<typeof schema>;
 
-export default class TodoDocument extends FirestoreDocument<Todo> {
-  static schema = todoSchema;
+export default class TodoDocument extends FirestoreDocument<TodoSchema> {
+  static schema = schema;
   public parent: Todos;
 
   toggleDone = () => {
