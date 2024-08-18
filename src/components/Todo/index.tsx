@@ -12,13 +12,7 @@ function Todo(props: { doc: TodoDocument }) {
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    todo.updateLocal({ name: event.target.value });
-  };
-
-  const handleInputBlur = () => {
-    if (!todo.synced) {
-      todo.saveLocal();
-    }
+    todo.update({ name: event.target.value });
   };
 
   const handleDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -32,7 +26,6 @@ function Todo(props: { doc: TodoDocument }) {
         type="text"
         value={name}
         onChange={handleInputChange}
-        onBlur={handleInputBlur}
       />
       <button onClick={handleDelete}>Delete</button>
     </div>

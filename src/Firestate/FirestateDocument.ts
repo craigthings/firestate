@@ -118,14 +118,26 @@ export default class FirestateDocument<T> {
   }
 
   public async update(data: Partial<T>) {
-    let updatedData = this.validateData({ ...this.data, ...data });
+    const previousData = { ...this.data };
+    const updatedData = this.validateData({ ...this.data, ...data });
+    
+    runInAction(() => {
+      this.data = updatedData;
+      this.originalData = { ...updatedData };
+      this.synced = false;
+    });
+
     try {
       await updateDoc<any>(doc(this.db, this.path), data);
       runInAction(() => {
-        this._updateData(updatedData);
         this.synced = true;
       });
     } catch (error) {
+      runInAction(() => {
+        this.data = previousData;
+        this.originalData = { ...previousData };
+        this.synced = true;
+      });
       throw new Error(error instanceof Error ? error.message : String(error));
     }
   }
