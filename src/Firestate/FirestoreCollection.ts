@@ -34,8 +34,8 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   private firestoreUnsubscribe: (() => void) | undefined;
   public db: Firestore;
   public path: string;
-  public children: Array<K> = [];
-  public docs: Array<T> = [];
+  public docs: Array<K> = [];
+  public firestoreDocs: Array<T> = [];
   public subscribed: boolean = false;
   protected DocumentClass: {
     new (parent: FirestoreCollection<any, any>, id: string, data: T | null): K;
@@ -67,8 +67,8 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     this.schema = this.DocumentClass.schema;
 
     makeObservable(this, {
+      firestoreDocs: observable,
       docs: observable,
-      children: observable,
       updateData: action,
       initializeData: action
     });
@@ -107,25 +107,25 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     const data = snapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() } as T;
     });
-    this.docs = data;
+    this.firestoreDocs = data;
 
     snapshot.docChanges().forEach((change) => {
       if (change.type === "added") {
-        this.children.push(
+        this.docs.push(
           this.DocumentClass.create(this, change.doc.id, change.doc.data() as T)
         );
       }
       if (change.type === "modified") {
-        const child = this.children.find((child) => child.id === change.doc.id);
+        const child = this.docs.find((child) => child.id === change.doc.id);
         if (child) {
           this.updateDocumentIfNewer(child, change.doc);
         }
       }
       if (change.type === "removed") {
-        this.children = this.children.filter((doc) => doc.id !== change.doc.id);
+        this.docs = this.docs.filter((doc) => doc.id !== change.doc.id);
       }
     });
-    resolve(this.children);
+    resolve(this.docs);
   };
 
   private updateDocumentIfNewer(child: K, doc: DocumentSnapshot<DocumentData>) {
@@ -141,13 +141,13 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     const data = snapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() } as T;
     });
-    this.docs = data;
+    this.firestoreDocs = data;
     snapshot.docs.forEach((doc) => {
-      this.children.push(
+      this.docs.push(
         this.DocumentClass.create(this, doc.id, doc.data() as T)
       );
     });
-    resolve(this.children);
+    resolve(this.docs);
   };
 
   public async add(data: Partial<T>) {
@@ -179,7 +179,7 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
 
   public get(id: string) {
     // return await getDoc<any>(doc(this.db, this.path, id))
-    return this.children.find((child) => child.id === id);
+    return this.docs.find((child) => child.id === id);
   }
 
   public unsubscribe() {
@@ -190,9 +190,9 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     }
   }
 
-  public async syncLocal() {
+  public async saveLocal() {
     const MAX_BATCH_SIZE = 500; // Firestore's limit for write operations in a single batch
-    const unsyncedDocs = this.children.filter(doc => !doc.synced);
+    const unsyncedDocs = this.docs.filter(doc => !doc.synced);
     const batches: WriteBatch[] = [];
 
     for (let i = 0; i < unsyncedDocs.length; i += MAX_BATCH_SIZE) {

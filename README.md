@@ -66,7 +66,7 @@ export class Todos extends FirestoreCollection<TodoDefaults, TodoDocument> {
   };
 
   getByIndex = (index: number) => {
-    return this.children.find((todo) => todo.data.index === index);
+    return this.docs.find((todo) => todo.data.index === index);
   };
 }
 ```
@@ -113,7 +113,7 @@ await todo.update({ done: true });
 await todo.delete();
 
 // Access the todos array
-const allTodos = rootStore.todos.children;
+const allTodos = rootStore.todos.docs;
 ```
 
 ## API Documentation
@@ -121,8 +121,8 @@ const allTodos = rootStore.todos.children;
 ### FirestoreCollection
 
 #### Properties
-- `children`: Array<FirestoreDocument> - Array of document instances in the collection.
-- `docs`: Array<T> - Array of raw document data.
+- `docs`: Array<FirestoreDocument> - Array of document instances in the collection.
+- `firestoreDocs`: Array<T> - Array of raw document data.
 - `subscribed`: boolean - Indicates if the collection is currently subscribed to Firestore updates.
 
 #### Methods
@@ -132,7 +132,7 @@ const allTodos = rootStore.todos.children;
 - `delete(id: string)`: Promise<void> - Deletes a document from the collection.
 - `update(id: string, data: Partial<T>)`: Promise<void> - Updates a document in the collection.
 - `get(id: string)`: FirestoreDocument<T> | undefined - Retrieves a document by ID.
-- `syncLocal()`: Promise<void> - Syncs local changes to Firestore.
+- `saveLocal()`: Promise<void> - Syncs local changes to Firestore.
 
 ### FirestoreDocument
 

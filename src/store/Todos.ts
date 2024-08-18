@@ -19,6 +19,6 @@ export default class Todos extends FirestoreCollection<TodoDefaults, TodoDocumen
   };
 
   getByIndex = (index: number) => {
-    return this.children.find((todo) => todo.data.index === index);
+    return this.docs.find((todo) => todo.data.index === index);
   };
 }

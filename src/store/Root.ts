@@ -19,9 +19,9 @@ class Root extends FirestoreDatabase {
   todos = new Todos(this);
 
   init = async () => {
-    let children = await this.todos.subscribe();
+    let docs = await this.todos.subscribe();
     console.log("Loaded. Todos:");
-    console.log(children);
+    console.log(docs);
   };
 }
 

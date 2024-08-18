@@ -7,10 +7,10 @@ import NewTodoForm from "./components/NewTodoForm";
 Object(window).store = store;
 
 function App() {
-  let todos = store.todos.children;
+  let todos = store.todos.docs;
 
   const handleSubmit = (name: string) => {
-    store.todos.create(name, store.todos.children.length, false);
+    store.todos.create(name, store.todos.docs.length, false);
   };
 
   return (

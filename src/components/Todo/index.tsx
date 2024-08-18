@@ -17,7 +17,7 @@ function Todo(props: { doc: TodoDocument }) {
 
   const handleInputBlur = () => {
     if (!todo.synced) {
-      todo.syncLocal();
+      todo.saveLocal();
     }
   };
 
