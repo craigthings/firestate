@@ -1,6 +1,6 @@
 import { initializeApp, FirebaseOptions } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
-import FirestoreDatabase from "../Firestate/FirestoreDatabase";
+import FirestateDatabase from "../Firestate/FirestateDatabase";
 import Todos from "./Todos";
 
 let config = {
@@ -15,7 +15,7 @@ let config = {
 initializeApp(config);
 let db = getFirestore();
 
-class Root extends FirestoreDatabase {
+class Root extends FirestateDatabase {
   todos = new Todos(this);
 
   init = async () => {

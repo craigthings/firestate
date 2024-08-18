@@ -8,11 +8,11 @@ import {
   onSnapshot
 } from "firebase/firestore";
 import { getFirestore, Firestore } from "firebase/firestore";
-import FirestoreCollection from "./FirestoreCollection";
+import FirestateCollection from "./FirestateCollection";
 import { observable, action, makeObservable, runInAction } from "mobx";
 
-export default class FirestoreDocument<T> {
-  public parent: FirestoreCollection<any, any>;
+export default class FirestateDocument<T> {
+  public parent: FirestateCollection<any, any>;
   public db: Firestore;
   public id: string = "";
   public schema: new () => any;
@@ -26,7 +26,7 @@ export default class FirestoreDocument<T> {
   static schema: new () => any;
 
   constructor(
-    parent: FirestoreCollection<any, any>,
+    parent: FirestateCollection<any, any>,
     id: string,
     data: T | null = null
   ) {
@@ -45,7 +45,7 @@ export default class FirestoreDocument<T> {
     this.db = parent.db;
     this.path = `${parent.path}/${id}`;
     this.id = id;
-    this.schema = new ((this.constructor as typeof FirestoreDocument).schema)();
+    this.schema = new ((this.constructor as typeof FirestateDocument).schema)();
 
     if (data) {
       this._updateData(data);
@@ -57,9 +57,9 @@ export default class FirestoreDocument<T> {
     }
   }
 
-  static create<T, K extends FirestoreDocument<T>>(
+  static create<T, K extends FirestateDocument<T>>(
     this: new (...args: any[]) => K,
-    parent: FirestoreCollection<any, any>,
+    parent: FirestateCollection<any, any>,
     id: string,
     data: T | null = null
   ): K {

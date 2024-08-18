@@ -1,6 +1,6 @@
 import { getFirestore, Firestore } from "firebase/firestore";
 
-export default class FirestoreDatabase {
+export default class FirestateDatabase {
   public db: Firestore;
 
   constructor(db: Firestore) {

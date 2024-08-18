@@ -1,4 +1,4 @@
-import FirestoreDocument from "../Firestate/FirestoreDocument";
+import FirestateDocument from "../Firestate/FirestateDocument";
 import Todos from "./Todos";
 
 export class TodoDefaults {
@@ -7,7 +7,7 @@ export class TodoDefaults {
   done = false;
 }
 
-export class TodoDocument extends FirestoreDocument<TodoDefaults> {
+export class TodoDocument extends FirestateDocument<TodoDefaults> {
   static schema = TodoDefaults;
   public parent: Todos;
 

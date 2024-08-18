@@ -1,5 +1,5 @@
-import FirestoreDocument from "./FirestoreDocument";
-import FirestoreDatabase from "./FirestoreDatabase";
+import FirestateDocument from "./FirestateDocument";
+import FirestateDatabase from "./FirestateDatabase";
 import {
   getFirestore,
   Firestore,
@@ -25,11 +25,11 @@ import {
 import { observable, IObservableArray, action, makeObservable, runInAction } from "mobx";
 import { Query } from "firebase/firestore";
 
-export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
+export default class FirestateCollection<T, K extends FirestateDocument<T>> {
   protected parent:
-    | FirestoreDocument<any>
-    | FirestoreCollection<any, any>
-    | FirestoreDatabase;
+    | FirestateDocument<any>
+    | FirestateCollection<any, any>
+    | FirestateDatabase;
   protected schema: new () => T;
   private firestoreUnsubscribe: (() => void) | undefined;
   public db: Firestore;
@@ -38,8 +38,8 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   public firestoreDocs: Array<T> = [];
   public subscribed: boolean = false;
   protected DocumentClass: {
-    new (parent: FirestoreCollection<any, any>, id: string, data: T | null): K;
-    create(parent: FirestoreCollection<any, any>, id: string, data: T | null): K;
+    new (parent: FirestateCollection<any, any>, id: string, data: T | null): K;
+    create(parent: FirestateCollection<any, any>, id: string, data: T | null): K;
     schema: new () => T;
   };
   public get collectionRef() {
@@ -53,17 +53,17 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
 
   public query = this.createQuery((collectionRef) => query(collectionRef));
 
-  static documentClass: new (parent: FirestoreCollection<any, any>, id: string, data: any) => FirestoreDocument<any>;
+  static documentClass: new (parent: FirestateCollection<any, any>, id: string, data: any) => FirestateDocument<any>;
   static collectionName: string;
 
   constructor(
-    parent: FirestoreDocument<any> | FirestoreDatabase,
+    parent: FirestateDocument<any> | FirestateDatabase,
     path?: string
   ) {
     this.parent = parent;
-    this.path = `${parent.path}/${path || (this.constructor as typeof FirestoreCollection).collectionName}`;
+    this.path = `${parent.path}/${path || (this.constructor as typeof FirestateCollection).collectionName}`;
     this.db = parent.db;
-    this.DocumentClass = (this.constructor as typeof FirestoreCollection).documentClass as any;
+    this.DocumentClass = (this.constructor as typeof FirestateCollection).documentClass as any;
     this.schema = this.DocumentClass.schema;
 
     makeObservable(this, {

@@ -27,7 +27,7 @@ const db = getFirestore();
 Create a schema and document class for your data:
 
 ```ts
-import FirestoreDocument from "./Firestate/FirestoreDocument";
+import FirestateDocument from "./Firestate/FirestateDocument";
 
 export class TodoSchema {
   name = "";
@@ -35,7 +35,7 @@ export class TodoSchema {
   done = false;
 }
 
-export class TodoDocument extends FirestoreDocument<TodoSchema> {
+export class TodoDocument extends FirestateDocument<TodoSchema> {
   static schema = TodoDefaults;
   public parent: Todos;
 }
@@ -46,10 +46,10 @@ export class TodoDocument extends FirestoreDocument<TodoSchema> {
 Define a collection class for your documents:
 
 ```ts
-import FirestoreCollection from "./Firestate/FirestoreCollection";
+import FirestateCollection from "./Firestate/FirestateCollection";
 import { TodoDocument, TodoSchema } from "./Todo";
 
-export class Todos extends FirestoreCollection<TodoDefaults, TodoDocument> {
+export class Todos extends FirestateCollection<TodoDefaults, TodoDocument> {
   static documentClass = TodoDocument;
   static collectionName = "todos";
 
@@ -73,12 +73,12 @@ export class Todos extends FirestoreCollection<TodoDefaults, TodoDocument> {
 
 ### 4. Set up the root store
 
-Create a root store that extends FirestoreDatabase:
+Create a root store that extends FirestateDatabase:
 
 ```ts
-import FirestoreDatabase from "./Firestate/FirestoreDatabase";
+import FirestateDatabase from "./Firestate/FirestateDatabase";
 
-class RootStore extends FirestoreDatabase {
+class RootStore extends FirestateDatabase {
   todos: Todos;
 
   constructor(db: Firestore) {
@@ -118,23 +118,23 @@ const allTodos = rootStore.todos.docs;
 
 ## API Documentation
 
-### FirestoreCollection
+### FirestateCollection
 
 #### Properties
-- `docs`: Array<FirestoreDocument> - Array of document instances in the collection.
-- `firestoreDocs`: Array<T> - Array of raw document data.
+- `docs`: Array<FirestateDocument> - Array of document instances in the collection.
+- `firestoreDocs`: Array<FirestateDocumentData[]> - Array of raw document data.
 - `subscribed`: boolean - Indicates if the collection is currently subscribed to Firestore updates.
 
 #### Methods
-- `subscribe()`: Promise<void> - Subscribes to real-time updates from Firestore.
+- `subscribe()`: Promise<DocumentType[]> - Subscribes to real-time updates from Firestore.
 - `unsubscribe()`: void - Unsubscribes from Firestore updates.
-- `add(data: Partial<T>)`: Promise<FirestoreDocument<T>> - Adds a new document to the collection.
+- `add(data: Partial<T>)`: Promise<FirestateDocument<T>> - Adds a new document to the collection.
 - `delete(id: string)`: Promise<void> - Deletes a document from the collection.
 - `update(id: string, data: Partial<T>)`: Promise<void> - Updates a document in the collection.
-- `get(id: string)`: FirestoreDocument<T> | undefined - Retrieves a document by ID.
+- `get(id: string)`: FirestateDocument<T> | undefined - Retrieves a document by ID.
 - `saveLocal()`: Promise<void> - Syncs local changes to Firestore.
 
-### FirestoreDocument
+### FirestateDocument
 
 #### Properties
 - `id`: string - The document's ID.
@@ -148,12 +148,12 @@ const allTodos = rootStore.todos.docs;
 - `update(data: Partial<T>)`: Promise<void> - Updates the document in Firestore.
 - `delete()`: Promise<void> - Deletes the document from Firestore.
 
-### FirestoreDatabase
+### FirestateDatabase
 
 #### Properties
 - `db`: Firestore - The Firestore database instance.
 
 #### Methods
-- `constructor(db: Firestore)`: Creates a new FirestoreDatabase instance.
+- `constructor(db: Firestore)`: Creates a new FirestateDatabase instance.
 
-Note: The FirestoreDatabase class is primarily used as a base class for your root store and doesn't have many public methods or properties of its own.
+Note: The FirestateDatabase class is primarily used as a base class for your root store and doesn't have many public methods or properties of its own.
