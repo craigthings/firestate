@@ -74,7 +74,7 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     });
   }
 
-  public subscribe = () => {
+  public subscribe = (): Promise<K[]> => {
     return new Promise((resolve, reject) => {
       this.firestoreUnsubscribe = onSnapshot(
         this.query(collection(this.db, this.path)),
