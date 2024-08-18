@@ -1,4 +1,4 @@
-import {FirestateCollection } from "firestate";
+import FirestateCollection from "firestate/FirestateCollection";
 import { TodoDocument, TodoDefaults } from "./Todo";
 import { orderBy, query } from "firebase/firestore";
 
