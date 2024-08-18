@@ -157,3 +157,26 @@ const allTodos = rootStore.todos.docs;
 - `constructor(db: Firestore)`: Creates a new FirestateDatabase instance.
 
 Note: The FirestateDatabase class is primarily used as a base class for your root store and doesn't have many public methods or properties of its own.
+## Project Structure
+
+This repository contains both the Firestate library and a demo application.
+
+### Demo Application
+
+The demo application is located in the demo folder. To run the demo:
+
+1. Navigate to the demo folder:
+   `
+   cd demo
+   `
+
+2. Install dependencies:
+   `
+   npm install
+   `
+
+3. Start the development server:
+   `
+   npm start
+   `
+

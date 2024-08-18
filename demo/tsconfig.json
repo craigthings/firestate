@@ -1,0 +1,27 @@
+{
+  "include": [
+    "./src/**/*"
+  ],
+  "compilerOptions": {
+    "strict": false,
+    "esModuleInterop": true,
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "firestate/*": ["../lib/src/*"]
+    },
+    "jsx": "react-jsx",
+    "target": "es6",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}

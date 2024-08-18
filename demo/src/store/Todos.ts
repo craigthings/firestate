@@ -1,4 +1,4 @@
-import FirestateCollection from "../Firestate/FirestateCollection";
+import {FirestateCollection } from "firestate";
 import { TodoDocument, TodoDefaults } from "./Todo";
 import { orderBy, query } from "firebase/firestore";
 
@@ -7,7 +7,9 @@ export default class Todos extends FirestateCollection<TodoDefaults, TodoDocumen
   static collectionName = "todos";
 
   public query = this.createQuery((collectionRef) => {
-    return query(collectionRef, orderBy("index"));
+    let q = query(collectionRef, orderBy("index"));
+    console.log('q',q);
+    return q;
   });
 
   addNew = (name: string, index: number, done: boolean) => {

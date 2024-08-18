@@ -1,4 +1,4 @@
-import FirestateDocument from "../Firestate/FirestateDocument";
+import FirestateDocument from "firestate/FirestateDocument";
 import Todos from "./Todos";
 
 export class TodoDefaults {

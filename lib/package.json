@@ -1,0 +1,29 @@
+{
+    "name": "firestate",
+    "version": "0.2.0",
+    "description": "Easily synchronize your UI state with your Firestore documents and collections.",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "prepublishOnly": "npm run build"
+    },
+    "keywords": [
+        "firebase",
+        "firestore",
+        "mobx",
+        "state-management"
+    ],
+    "author": "Your Name",
+    "license": "MIT",
+    "dependencies": {
+        "@types/firebase": "^3.2.1"
+    },
+    "peerDependencies": {
+        "firebase": "^9.15.0",
+        "mobx": "^6.7.0"
+    },
+    "devDependencies": {
+        "typescript": "^4.9.0"
+    }
+}

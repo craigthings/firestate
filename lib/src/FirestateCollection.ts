@@ -38,11 +38,12 @@ export default class FirestateCollection<T, K extends FirestateDocument<T>> {
   public firestoreDocs: Array<T> = [];
   public subscribed: boolean = false;
   protected DocumentClass: {
-    new (parent: FirestateCollection<any, any>, id: string, data: T | null): K;
+    new(parent: FirestateCollection<any, any>, id: string, data: T | null): K;
     create(parent: FirestateCollection<any, any>, id: string, data: T | null): K;
     schema: new () => T;
   };
   public get collectionRef() {
+    console.log('collectionRef', this.db, this.path);
     return collection(this.db, this.path);
   }
   protected createQuery<TQuery extends DocumentData = DocumentData>(
@@ -91,7 +92,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T>> {
 
   private handleDataChanges = (
     snapshot: QuerySnapshot<DocumentData>,
-    resolve: (value: unknown) => void
+    resolve: (value: K[]) => void
   ) => {
     if (this.subscribed) {
       this.updateData(snapshot, resolve);
@@ -99,11 +100,12 @@ export default class FirestateCollection<T, K extends FirestateDocument<T>> {
       this.initializeData(snapshot, resolve);
     }
   };
-
+  
   public updateData = (
     snapshot: QuerySnapshot<DocumentData>,
-    resolve: (value: unknown) => void
+    resolve: (value: K[]) => void
   ) => {
+
     const data = snapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() } as T;
     });
@@ -136,7 +138,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T>> {
 
   initializeData = (
     snapshot: QuerySnapshot<DocumentData>,
-    resolve: (value: unknown) => void
+    resolve: (value: K[]) => void
   ) => {
     const data = snapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() } as T;
