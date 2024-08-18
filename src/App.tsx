@@ -10,7 +10,7 @@ function App() {
   let todos = store.todos.docs;
 
   const handleSubmit = (name: string) => {
-    store.todos.create(name, store.todos.docs.length, false);
+    store.todos.addNew(name, store.todos.docs.length, false);
   };
 
   return (

@@ -10,7 +10,7 @@ export default class Todos extends FirestateCollection<TodoDefaults, TodoDocumen
     return query(collectionRef, orderBy("index"));
   });
 
-  create = (name: string, index: number, done: boolean) => {
+  addNew = (name: string, index: number, done: boolean) => {
     this.add({ name, index, done });
   };
 
