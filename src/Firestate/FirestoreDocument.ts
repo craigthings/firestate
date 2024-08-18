@@ -21,6 +21,7 @@ export default class FirestoreDocument<T> {
   public originalData: T = {} as T;
   public synced: boolean = true;
   public latestRemoteData: T | null = null;
+  private firestoreUnsubscribe: (() => void) | undefined;
 
   static schema: new () => any;
 
@@ -35,10 +36,9 @@ export default class FirestoreDocument<T> {
       synced: observable,
       latestRemoteData: observable,
       updateLocal: action,
-      syncLocal: action,
-      revertLocal: action,
+      saveLocal: action,
+      discardLocal: action,
       _updateData: action,
-      syncRemote: action
     });
 
     this.parent = parent;
@@ -66,8 +66,8 @@ export default class FirestoreDocument<T> {
     return new this(parent, id, data);
   }
 
-  protected subscribe() {
-    this.unsubscribe = onSnapshot(doc(this.db, this.path), (snapshot) => {
+  private subscribe() {
+    this.firestoreUnsubscribe = onSnapshot(doc(this.db, this.path), (snapshot) => {
       let data = snapshot.data() as T;
       this._updateData(data);
     });
@@ -95,7 +95,7 @@ export default class FirestoreDocument<T> {
     });
   };
 
-  public async syncLocal() {
+  public async saveLocal() {
     try {
       const validatedData = this.validateData(this.data);
       await updateDoc<any>(doc(this.db, this.path), validatedData);
@@ -107,7 +107,7 @@ export default class FirestoreDocument<T> {
     }
   }
 
-  public revertLocal() {
+  public discardLocal() {
     runInAction(() => {
       if (this.latestRemoteData && this.synced === false) {
         this.data = this.latestRemoteData;
@@ -138,20 +138,10 @@ export default class FirestoreDocument<T> {
     }
   }
 
-  public syncRemote() {
-    runInAction(() => {
-      if (this.latestRemoteData) {
-        this.data = { ...this.latestRemoteData };
-        this.originalData = { ...this.latestRemoteData };
-        this.synced = true;
-        this.latestRemoteData = null;
-      }
-    });
-  }
-
   public unsubscribe() {
-    if (this.unsubscribe) {
-      this.unsubscribe();
+    if (this.firestoreUnsubscribe) {
+      this.firestoreUnsubscribe();
+      this.firestoreUnsubscribe = undefined;
     }
   }
 }

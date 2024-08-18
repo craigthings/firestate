@@ -2,7 +2,7 @@
 
 # Firestate
 
-Firestate is a lightweight library that simplifies working with Firestore in TypeScript projects. It provides a set of classes to manage Firestore collections and documents with type safety and MobX integration.
+Firestate is a lightweight library that simplifies working with Firestore in TypeScript projects that use MobX for UI reactivity. It provides an easy to use API for managing your Firestore collections and documents while automatically keeping your UI up to date.
 
 ## Basic Usage
 
@@ -116,4 +116,44 @@ await todo.delete();
 const allTodos = rootStore.todos.children;
 ```
 
-Firestate provides type-safe access to your Firestore data and integrates with MobX for reactive updates in your UI.
+## API Documentation
+
+### FirestoreCollection
+
+#### Properties
+- `children`: Array<FirestoreDocument> - Array of document instances in the collection.
+- `docs`: Array<T> - Array of raw document data.
+- `subscribed`: boolean - Indicates if the collection is currently subscribed to Firestore updates.
+
+#### Methods
+- `subscribe()`: Promise<void> - Subscribes to real-time updates from Firestore.
+- `unsubscribe()`: void - Unsubscribes from Firestore updates.
+- `add(data: Partial<T>)`: Promise<FirestoreDocument<T>> - Adds a new document to the collection.
+- `delete(id: string)`: Promise<void> - Deletes a document from the collection.
+- `update(id: string, data: Partial<T>)`: Promise<void> - Updates a document in the collection.
+- `get(id: string)`: FirestoreDocument<T> | undefined - Retrieves a document by ID.
+- `syncLocal()`: Promise<void> - Syncs local changes to Firestore.
+
+### FirestoreDocument
+
+#### Properties
+- `id`: string - The document's ID.
+- `data`: T - The document's data.
+- `synced`: boolean - Indicates if the document is synced with Firestore.
+
+#### Methods
+- `updateLocal(data: Partial<T>)`: void - Updates the document locally without syncing to Firestore.
+- `saveLocal()`: Promise<void> - Saves local changes to Firestore.
+- `discardLocal()`: void - Discards local changes and reverts to the last synced state.
+- `update(data: Partial<T>)`: Promise<void> - Updates the document in Firestore.
+- `delete()`: Promise<void> - Deletes the document from Firestore.
+
+### FirestoreDatabase
+
+#### Properties
+- `db`: Firestore - The Firestore database instance.
+
+#### Methods
+- `constructor(db: Firestore)`: Creates a new FirestoreDatabase instance.
+
+Note: The FirestoreDatabase class is primarily used as a base class for your root store and doesn't have many public methods or properties of its own.

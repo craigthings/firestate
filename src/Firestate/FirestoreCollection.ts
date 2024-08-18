@@ -31,6 +31,7 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
     | FirestoreCollection<any, any>
     | FirestoreDatabase;
   protected schema: new () => T;
+  private firestoreUnsubscribe: (() => void) | undefined;
   public db: Firestore;
   public path: string;
   public children: Array<K> = [];
@@ -75,10 +76,13 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
 
   public subscribe = () => {
     return new Promise((resolve, reject) => {
-      this.unsubscribe = onSnapshot(
+      this.firestoreUnsubscribe = onSnapshot(
         this.query(collection(this.db, this.path)),
         (snapshot: QuerySnapshot<DocumentData>) => {
           this.handleDataChanges(snapshot, resolve);
+        },
+        (error) => {
+          reject(error);
         }
       );
       this.subscribed = true;
@@ -179,8 +183,10 @@ export default class FirestoreCollection<T, K extends FirestoreDocument<T>> {
   }
 
   public unsubscribe() {
-    if (this.unsubscribe) {
-      this.unsubscribe();
+    if (this.firestoreUnsubscribe) {
+      this.firestoreUnsubscribe();
+      this.firestoreUnsubscribe = undefined;
+      this.subscribed = false;
     }
   }
 
