@@ -11,8 +11,8 @@ import { getFirestore, Firestore } from "firebase/firestore";
 import FirestateCollection from "./FirestateCollection";
 import { observable, action, makeObservable, runInAction } from "mobx";
 
-export default class FirestateDocument<T> {
-  public parent: FirestateCollection<any, any>;
+export default class FirestateDocument<T, P extends FirestateCollection<T, any> = FirestateCollection<T, any>> {
+  public parent: P;
   public db: Firestore;
   public id: string = "";
   public schema: new () => any;
@@ -26,7 +26,7 @@ export default class FirestateDocument<T> {
   static schema: new () => any;
 
   constructor(
-    parent: FirestateCollection<any, any>,
+    parent: P,
     id: string,
     data: T | null = null
   ) {
@@ -57,9 +57,9 @@ export default class FirestateDocument<T> {
     }
   }
 
-  static create<T, K extends FirestateDocument<T>>(
+  static create<T, P extends FirestateCollection<T, any>, K extends FirestateDocument<T, P>>(
     this: new (...args: any[]) => K,
-    parent: FirestateCollection<any, any>,
+    parent: P,
     id: string,
     data: T | null = null
   ): K {

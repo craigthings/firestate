@@ -25,7 +25,7 @@ import {
 import { observable, IObservableArray, action, makeObservable, runInAction } from "mobx";
 import { Query } from "firebase/firestore";
 
-export default class FirestateCollection<T, K extends FirestateDocument<T>> {
+export default class FirestateCollection<T, K extends FirestateDocument<T, any>> {
   protected parent:
     | FirestateDocument<any>
     | FirestateCollection<any, any>
@@ -53,7 +53,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T>> {
 
   public query = this.createQuery((collectionRef) => query(collectionRef));
 
-  static documentClass: new (parent: FirestateCollection<any, any>, id: string, data: any) => FirestateDocument<any>;
+  static documentClass: new (parent: any, id: string, data: any) => FirestateDocument<any>;
   static collectionName: string;
 
   constructor(

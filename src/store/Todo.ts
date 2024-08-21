@@ -1,5 +1,5 @@
 import { FirestateDocument } from "../Firestate";
-import Todos from "./Todos";
+import type Todos from "./Todos";
 
 export class TodoDefaults {
   name = "";
@@ -7,7 +7,7 @@ export class TodoDefaults {
   done = false;
 }
 
-export class TodoDocument extends FirestateDocument<TodoDefaults> {
+export class TodoDocument extends FirestateDocument<TodoDefaults, Todos> {
   static schema = TodoDefaults;
 
   toggleDone = () => {
