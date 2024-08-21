@@ -4,7 +4,13 @@
         "outDir": "./dist",
         "declaration": true,
         "declarationDir": "./dist",
-        "noEmit": false
+        "noEmit": false,
+        "module": "esnext",
+        "target": "es2015",
+        "lib": ["es2015", "dom"],
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "sourceMap": true,
     },
     "include": [
         "src/Firestate/**/*"
