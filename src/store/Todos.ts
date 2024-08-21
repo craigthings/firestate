@@ -1,4 +1,4 @@
-import FirestateCollection from "../Firestate/FirestateCollection";
+import { FirestateCollection } from "../Firestate";
 import { TodoDocument, TodoDefaults } from "./Todo";
 import { orderBy, query } from "firebase/firestore";
 
@@ -15,7 +15,7 @@ export default class Todos extends FirestateCollection<TodoDefaults, TodoDocumen
   };
 
   remove = async (id: string) => {
-    await this.get(id).delete();
+    await this.get(id)?.delete();
   };
 
   getByIndex = (index: number) => {

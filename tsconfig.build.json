@@ -1,0 +1,17 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "declaration": true,
+        "declarationDir": "./dist",
+        "noEmit": false
+    },
+    "include": [
+        "src/Firestate/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.test.ts",
+        "src/**/*.test.tsx"
+    ]
+}

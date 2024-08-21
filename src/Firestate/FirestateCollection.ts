@@ -91,7 +91,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T>> {
 
   private handleDataChanges = (
     snapshot: QuerySnapshot<DocumentData>,
-    resolve: (value: unknown) => void
+    resolve: (value: K[]) => void
   ) => {
     if (this.subscribed) {
       this.updateData(snapshot, resolve);
@@ -102,7 +102,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T>> {
 
   public updateData = (
     snapshot: QuerySnapshot<DocumentData>,
-    resolve: (value: unknown) => void
+    resolve: (value: K[]) => void
   ) => {
     const data = snapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() } as T;
@@ -136,7 +136,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T>> {
 
   initializeData = (
     snapshot: QuerySnapshot<DocumentData>,
-    resolve: (value: unknown) => void
+    resolve: (value: K[]) => void
   ) => {
     const data = snapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() } as T;
@@ -150,7 +150,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T>> {
     resolve(this.docs);
   };
 
-  public async add(data: Partial<T>) {
+  public async add(data: Partial<T>): Promise<K> {
     try {
       const validatedData = { ...new this.schema(), ...data };
       const docRef = await addDoc(collection(this.db, this.path), validatedData as WithFieldValue<DocumentData>);

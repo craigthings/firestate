@@ -3,8 +3,9 @@
     "./src/**/*"
   ],
   "compilerOptions": {
-    "strict": false,
+    "strict": true,
     "esModuleInterop": true,
+    "types": ["@types/babel__core"],
     "lib": [
       "dom",
       "dom.iterable",

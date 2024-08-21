@@ -1,6 +1,6 @@
 import { initializeApp, FirebaseOptions } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
-import FirestateDatabase from "../Firestate/FirestateDatabase";
+import { FirestateDatabase } from "../Firestate";
 import Todos from "./Todos";
 
 let config = {
