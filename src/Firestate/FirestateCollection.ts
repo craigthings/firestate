@@ -49,6 +49,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
   public subscribed: boolean = false;
   protected DocumentClass: DocumentConstructor<T, K>;
   public collectionName: string;
+  public currentQuery: (collectionRef: CollectionReference<DocumentData>) => Query<DocumentData>;
 
   constructor(
     parent: FirestateDocument<any> | FirestateDatabase,
@@ -61,15 +62,15 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     this.collectionName = options?.collectionName || (this.constructor as any).collectionName;
     this.path = `${parent.path}/${this.collectionName}`;
 
-    if (options?.query) {
-      this.query = this.createQuery(options.query);
-    }
+    this.currentQuery = options?.query || this.createQuery((collectionRef) => query(collectionRef));
 
     makeObservable(this, {
       firestoreDocs: observable,
       docs: observable,
+      currentQuery: observable,
       updateData: action,
-      initializeData: action
+      initializeData: action,
+      setQuery: action
     });
   }
 
@@ -83,12 +84,18 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     return queryFn;
   }
 
-  public query = this.createQuery((collectionRef) => query(collectionRef));
+  public setQuery(newQuery: (collectionRef: CollectionReference<DocumentData>) => Query<DocumentData>) {
+    this.currentQuery = newQuery;
+    if (this.subscribed) {
+      this.unsubscribe();
+      this.subscribe();
+    }
+  }
 
   public subscribe = (): Promise<K[]> => {
     return new Promise((resolve, reject) => {
       this.firestoreUnsubscribe = onSnapshot(
-        this.query(collection(this.db, this.path)),
+        this.currentQuery(collection(this.db, this.path)),
         (snapshot: QuerySnapshot<DocumentData>) => {
           this.handleDataChanges(snapshot, resolve);
         },

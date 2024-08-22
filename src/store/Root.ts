@@ -19,7 +19,7 @@ class Root extends FirestateDatabase {
   todos = new Todos(this);
 
   init = async () => {
-    let docs = await this.todos.subscribe();
+    let docs = await this.todos.collection.subscribe();
     console.log("Loaded. Todos:");
     console.log(docs);
   };

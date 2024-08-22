@@ -1,24 +1,31 @@
-import { FirestateCollection } from "../Firestate";
+import { FirestateCollection, FirestateDatabase } from "../Firestate";
 import { TodoDocument, TodoDefaults } from "./Todo";
 import { orderBy, query } from "firebase/firestore";
 
-export default class Todos extends FirestateCollection<TodoDefaults, TodoDocument> {
-  static documentClass = TodoDocument;
-  static collectionName = "todos";
+export default class Todos {
 
-  public query = this.createQuery((collectionRef) => {
-    return query(collectionRef, orderBy("index"));
-  });
+  constructor(
+    public parent: FirestateDatabase,
+    public collection = new FirestateCollection<TodoDefaults, TodoDocument>(
+      parent,
+      {
+        documentClass: TodoDocument,
+        collectionName: "todos",
+        documentSchema: TodoDefaults,
+        query: (collectionRef) => query(collectionRef, orderBy("index")),
+      }
+    )
+  ) {}
 
   addNew = (name: string, index: number, done: boolean) => {
-    this.add({ name, index, done });
+    this.collection.add({ name, index, done });
   };
 
   remove = async (id: string) => {
-    await this.get(id)?.delete();
+    await this.collection.get(id)?.delete();
   };
 
   getByIndex = (index: number) => {
-    return this.docs.find((todo) => todo.data.index === index);
+    return this.collection.docs.find((todo) => todo.data.index === index);
   };
 }
