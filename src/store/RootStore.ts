@@ -1,7 +1,7 @@
 import { initializeApp, FirebaseOptions } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { FirestateDatabase } from "../Firestate";
-import Todos from "./Todos";
+import TodoCollection from "./TodoCollection";
 
 let config = {
   apiKey: "AIzaSyDTyUDdiOwOcfeoayvjGCaZc33mV6a5wt8",
@@ -17,7 +17,7 @@ let firestore = getFirestore();
 let db = new FirestateDatabase(firestore);
 
 class RootStore {
-  todos = new Todos(db);
+  todos = new TodoCollection(db);
 
   init = async () => {
     await this.todos.subscribe();

@@ -1,6 +1,6 @@
 import { FirestateDocument } from "../Firestate";
-import type Todos from "./Todos";
-import { type TodoSchema } from "./Todos";
+import type Todos from "./TodoCollection";
+import { type TodoSchema } from "./TodoCollection";
 
 export class TodoDocument extends FirestateDocument<TodoSchema, Todos> {
 

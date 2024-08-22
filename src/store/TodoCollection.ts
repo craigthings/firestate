@@ -1,5 +1,5 @@
-import { FirestateCollection } from "../Firestate";
-import { TodoDocument } from "./Todo";
+import { FirestateCollection, FirestateDatabase } from "../Firestate";
+import { TodoDocument } from "./TodoDocument";
 import { orderBy, query } from "firebase/firestore";
 
 export class TodoSchema {
@@ -8,11 +8,15 @@ export class TodoSchema {
   done = false;
 }
 
-export default class Todos extends FirestateCollection<TodoSchema, TodoDocument> {
+export default class TodoCollection extends FirestateCollection<TodoSchema, TodoDocument> {
   static documentClass = TodoDocument;
   static documentSchema = TodoSchema;
   static collectionName = "todos";
   public query = this.setQuery(orderBy("done", "asc"));
+
+  constructor(db: FirestateDatabase) {
+    super(db);
+  }
 
   setOrderByIndex = () => {
     this.setQuery(orderBy("index"));

@@ -1,5 +1,5 @@
 import "./styles.css";
-import store from "./store/Root";
+import store from "./store/RootStore";
 import { observer } from "mobx-react";
 import Todo from "./components/Todo";
 import NewTodoForm from "./components/NewTodoForm";
