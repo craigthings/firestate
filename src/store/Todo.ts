@@ -7,7 +7,7 @@ export class TodoDefaults {
   done = false;
 }
 
-export class TodoDocument extends FirestateDocument<TodoDefaults, Todos> {
+export class TodoDocument extends FirestateDocument<TodoDefaults> {
   static schema = TodoDefaults;
 
   toggleDone = () => {

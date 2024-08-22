@@ -25,11 +25,21 @@ import {
 import { observable, IObservableArray, action, makeObservable, runInAction } from "mobx";
 import { Query } from "firebase/firestore";
 
+type DocumentConstructor<T, K extends FirestateDocument<T, any>> = {
+  new (parent: any, id: string, data: T | null): K;
+  create(parent: any, id: string, data: T | null): K;
+  schema: new () => T;
+};
+
+interface FirestateCollectionOptions<T, K extends FirestateDocument<T, any>> {
+  documentClass: DocumentConstructor<T, K>;
+  collectionName: string;
+  documentSchema: new () => T;
+  query?: (collectionRef: CollectionReference<DocumentData>) => Query<DocumentData>;
+}
+
 export default class FirestateCollection<T, K extends FirestateDocument<T, any>> {
-  protected parent:
-    | FirestateDocument<any>
-    | FirestateCollection<any, any>
-    | FirestateDatabase;
+  protected parent: FirestateDocument<any> | FirestateDatabase;
   protected schema: new () => T;
   private firestoreUnsubscribe: (() => void) | undefined;
   public db: Firestore;
@@ -37,34 +47,23 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
   public docs: Array<K> = [];
   public firestoreDocs: Array<T> = [];
   public subscribed: boolean = false;
-  protected DocumentClass: {
-    new (parent: FirestateCollection<any, any>, id: string, data: T | null): K;
-    create(parent: FirestateCollection<any, any>, id: string, data: T | null): K;
-    schema: new () => T;
-  };
-  public get collectionRef() {
-    return collection(this.db, this.path);
-  }
-  protected createQuery<TQuery extends DocumentData = DocumentData>(
-    queryFn: (collectionRef: CollectionReference<TQuery>) => Query<TQuery>
-  ) {
-    return queryFn;
-  }
-
-  public query = this.createQuery((collectionRef) => query(collectionRef));
-
-  static documentClass: new (parent: any, id: string, data: any) => FirestateDocument<any>;
-  static collectionName: string;
+  protected DocumentClass: DocumentConstructor<T, K>;
+  public collectionName: string;
 
   constructor(
     parent: FirestateDocument<any> | FirestateDatabase,
-    path?: string
+    options: FirestateCollectionOptions<T, K>
   ) {
     this.parent = parent;
-    this.path = `${parent.path}/${path || (this.constructor as typeof FirestateCollection).collectionName}`;
     this.db = parent.db;
-    this.DocumentClass = (this.constructor as typeof FirestateCollection).documentClass as any;
-    this.schema = this.DocumentClass.schema;
+    this.DocumentClass = options.documentClass;
+    this.schema = options.documentSchema;
+    this.collectionName = options.collectionName;
+    this.path = `${parent.path}/${this.collectionName}`;
+
+    if (options.query) {
+      this.query = this.createQuery(options.query);
+    }
 
     makeObservable(this, {
       firestoreDocs: observable,
@@ -73,6 +72,18 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
       initializeData: action
     });
   }
+
+  public get collectionRef() {
+    return collection(this.db, this.path);
+  }
+
+  protected createQuery<TQuery extends DocumentData = DocumentData>(
+    queryFn: (collectionRef: CollectionReference<TQuery>) => Query<TQuery>
+  ) {
+    return queryFn;
+  }
+
+  public query = this.createQuery((collectionRef) => query(collectionRef));
 
   public subscribe = (): Promise<K[]> => {
     return new Promise((resolve, reject) => {
@@ -112,7 +123,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     snapshot.docChanges().forEach((change) => {
       if (change.type === "added") {
         this.docs.push(
-          this.DocumentClass.create(this, change.doc.id, change.doc.data() as T)
+          this.createDocument(change.doc.id, change.doc.data() as T)
         );
       }
       if (change.type === "modified") {
@@ -134,6 +145,10 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     }
   }
 
+  private createDocument(id: string, data: T | null): K {
+    return this.DocumentClass.create(this, id, data);
+  }
+
   initializeData = (
     snapshot: QuerySnapshot<DocumentData>,
     resolve: (value: K[]) => void
@@ -144,7 +159,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     this.firestoreDocs = data;
     snapshot.docs.forEach((doc) => {
       this.docs.push(
-        this.DocumentClass.create(this, doc.id, doc.data() as T)
+        this.createDocument(doc.id, doc.data() as T)
       );
     });
     resolve(this.docs);
@@ -154,7 +169,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     try {
       const validatedData = { ...new this.schema(), ...data };
       const docRef = await addDoc(collection(this.db, this.path), validatedData as WithFieldValue<DocumentData>);
-      return this.DocumentClass.create(this, docRef.id, validatedData);
+      return this.createDocument(docRef.id, validatedData);
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : String(error));
     }
