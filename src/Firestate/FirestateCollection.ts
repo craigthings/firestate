@@ -7,6 +7,13 @@ import {
   DocumentSnapshot,
   WriteBatch,
   writeBatch,
+  QueryConstraint,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
+  endBefore,
 } from "firebase/firestore";
 import {
   doc,
@@ -16,13 +23,11 @@ import {
   updateDoc,
   collection,
   onSnapshot,
-  query,
   QuerySnapshot,
   DocumentData,
   WithFieldValue,
-  orderBy
 } from "firebase/firestore";
-import { observable, IObservableArray, action, makeObservable, runInAction } from "mobx";
+import { observable, IObservableArray, action, makeObservable, runInAction, transaction } from "mobx";
 import { Query } from "firebase/firestore";
 
 type DocumentConstructor<T, K extends FirestateDocument<T, any>> = {
@@ -35,13 +40,14 @@ interface FirestateCollectionOptions<T, K extends FirestateDocument<T, any>> {
   documentClass: DocumentConstructor<T, K>;
   collectionName: string;
   documentSchema: new () => T;
-  query?: (collectionRef: CollectionReference<DocumentData>) => Query<DocumentData>;
+  queryConstraints?: QueryConstraint[];
 }
 
 export default class FirestateCollection<T, K extends FirestateDocument<T, any>> {
   protected parent: FirestateDocument<any> | FirestateDatabase;
   protected schema: new () => T;
   private firestoreUnsubscribe: (() => void) | undefined;
+  public query: Query<any> | undefined;
   public db: Firestore;
   public path: string;
   public docs: Array<K> = [];
@@ -49,7 +55,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
   public subscribed: boolean = false;
   protected DocumentClass: DocumentConstructor<T, K>;
   public collectionName: string;
-  public currentQuery: (collectionRef: CollectionReference<DocumentData>) => Query<DocumentData>;
+  public currentQueryConstraints: QueryConstraint[] = [];
 
   constructor(
     parent: FirestateDocument<any> | FirestateDatabase,
@@ -57,19 +63,25 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
   ) {
     this.parent = parent;
     this.db = parent.db;
+
+    // Use static properties if not provided in options
     this.DocumentClass = options?.documentClass || (this.constructor as any).documentClass;
-    this.schema = options?.documentSchema || (this.constructor as any).schema;
+    this.schema = (this.DocumentClass as any).schema || (this.constructor as any).schema;
     this.collectionName = options?.collectionName || (this.constructor as any).collectionName;
+
+    if (!this.DocumentClass || !this.schema || !this.collectionName) {
+      throw new Error('documentClass, schema, and collectionName must be provided either as static properties or in the options');
+    }
+
     this.path = `${parent.path}/${this.collectionName}`;
 
-    this.currentQuery = options?.query || this.createQuery((collectionRef) => query(collectionRef));
+    this.currentQueryConstraints = options?.queryConstraints || [];
 
     makeObservable(this, {
       firestoreDocs: observable,
       docs: observable,
-      currentQuery: observable,
+      currentQueryConstraints: observable,
       updateData: action,
-      initializeData: action,
       setQuery: action
     });
   }
@@ -78,24 +90,69 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     return collection(this.db, this.path);
   }
 
-  protected createQuery<TQuery extends DocumentData = DocumentData>(
-    queryFn: (collectionRef: CollectionReference<TQuery>) => Query<TQuery>
-  ) {
-    return queryFn;
-  }
-
-  public setQuery(newQuery: (collectionRef: CollectionReference<DocumentData>) => Query<DocumentData>) {
-    this.currentQuery = newQuery;
+  public setQuery = (...queryConstraints: QueryConstraint[]) => {
+    this.currentQueryConstraints = queryConstraints;
+    let currentQuery = query(this.collectionRef, ...this.currentQueryConstraints);
     if (this.subscribed) {
       this.unsubscribe();
+      this.clearCurrentDocs();
       this.subscribe();
     }
+    return currentQuery;
+  }
+
+  private clearCurrentDocs = () => {
+    this.docs = [];
+    this.firestoreDocs = [];
+  }
+
+  private handleDataChanges = (
+    snapshot: QuerySnapshot<DocumentData>,
+    resolve: (value: K[]) => void
+  ) => {
+    transaction(() => {
+      this.updateData(snapshot);
+      resolve(this.docs);
+    });
+  };
+
+  public updateData = (snapshot: QuerySnapshot<DocumentData>) => {
+    const docChanges = snapshot.docChanges();
+  
+    docChanges.forEach((change) => {
+      if (change.type === "added") {
+        const newDoc = this.createDocument(change.doc.id, change.doc.data() as T);
+        this.docs.push(newDoc);
+      }
+  
+      if (change.type === "modified") {
+        const index = this.docs.findIndex(doc => doc.id === change.doc.id);
+        if (index !== -1) {
+          this.updateDocumentIfNewer(this.docs[index], change.doc);
+        }
+      }
+  
+      if (change.type === "removed") {
+        const index = this.docs.findIndex(doc => doc.id === change.doc.id);
+        if (index !== -1) {
+          this.docs.splice(index, 1);
+        }
+      }
+    });
+  
+    // Update firestoreDocs to match the current state
+    this.firestoreDocs = this.docs.map(doc => ({ ...doc.data, id: doc.id }));
   }
 
   public subscribe = (): Promise<K[]> => {
+    if (this.subscribed) {
+      console.warn(`FirestateCollection: Already subscribed to ${this.collectionName}`);
+      return Promise.resolve(this.docs);
+    }
     return new Promise((resolve, reject) => {
+      const queryRef = query(this.collectionRef, ...this.currentQueryConstraints);
       this.firestoreUnsubscribe = onSnapshot(
-        this.currentQuery(collection(this.db, this.path)),
+        queryRef,
         (snapshot: QuerySnapshot<DocumentData>) => {
           this.handleDataChanges(snapshot, resolve);
         },
@@ -107,74 +164,20 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     });
   };
 
-  private handleDataChanges = (
-    snapshot: QuerySnapshot<DocumentData>,
-    resolve: (value: K[]) => void
-  ) => {
-    if (this.subscribed) {
-      this.updateData(snapshot, resolve);
-    } else {
-      this.initializeData(snapshot, resolve);
-    }
-  };
-
-  public updateData = (
-    snapshot: QuerySnapshot<DocumentData>,
-    resolve: (value: K[]) => void
-  ) => {
-    const data = snapshot.docs.map((doc) => {
-      return { id: doc.id, ...doc.data() } as T;
-    });
-    this.firestoreDocs = data;
-
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === "added") {
-        this.docs.push(
-          this.createDocument(change.doc.id, change.doc.data() as T)
-        );
-      }
-      if (change.type === "modified") {
-        const child = this.docs.find((child) => child.id === change.doc.id);
-        if (child) {
-          this.updateDocumentIfNewer(child, change.doc);
-        }
-      }
-      if (change.type === "removed") {
-        this.docs = this.docs.filter((doc) => doc.id !== change.doc.id);
-      }
-    });
-    resolve(this.docs);
-  };
-
-  private updateDocumentIfNewer(child: K, doc: DocumentSnapshot<DocumentData>) {
+  private updateDocumentIfNewer = (child: K, doc: DocumentSnapshot<DocumentData>) => {
     if (!doc.metadata.hasPendingWrites) {
       child._updateData(doc.data() as T);
     }
   }
 
-  private createDocument(id: string, data: T | null): K {
+  private createDocument = (id: string, data: T | null): K => {
     return this.DocumentClass.create(this, id, data);
   }
 
-  initializeData = (
-    snapshot: QuerySnapshot<DocumentData>,
-    resolve: (value: K[]) => void
-  ) => {
-    const data = snapshot.docs.map((doc) => {
-      return { id: doc.id, ...doc.data() } as T;
-    });
-    this.firestoreDocs = data;
-    snapshot.docs.forEach((doc) => {
-      this.docs.push(
-        this.createDocument(doc.id, doc.data() as T)
-      );
-    });
-    resolve(this.docs);
-  };
-
-  public async add(data: Partial<T>): Promise<K> {
+  public add = async (data: Partial<T>): Promise<K> => {
     try {
-      const validatedData = { ...new this.schema(), ...data };
+      const schemaInstance = new this.schema();
+      const validatedData = { ...schemaInstance, ...data };
       const docRef = await addDoc(collection(this.db, this.path), validatedData as WithFieldValue<DocumentData>);
       return this.createDocument(docRef.id, validatedData);
     } catch (error) {
@@ -182,7 +185,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     }
   }
 
-  public async delete(id: string) {
+  public delete = async (id: string) => {
     try {
       await deleteDoc(doc(this.db, this.path, id));
     } catch (error) {
@@ -190,7 +193,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     }
   }
 
-  public async update(id: string, data: Partial<T>) {
+  public update = async (id: string, data: Partial<T>) => {
     try {
       const validatedData = { ...new this.schema(), ...data };
       await updateDoc<any>(doc(this.db, this.path, id), validatedData);
@@ -199,12 +202,12 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     }
   }
 
-  public get(id: string) {
+  public get = (id: string) => {
     // return await getDoc<any>(doc(this.db, this.path, id))
     return this.docs.find((child) => child.id === id);
   }
 
-  public unsubscribe() {
+  public unsubscribe = () => {
     if (this.firestoreUnsubscribe) {
       this.firestoreUnsubscribe();
       this.firestoreUnsubscribe = undefined;
@@ -212,7 +215,7 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
     }
   }
 
-  public async saveLocal() {
+  public saveLocal = async () => {
     const MAX_BATCH_SIZE = 500; // Firestore's limit for write operations in a single batch
     const unsyncedDocs = this.docs.filter(doc => !doc.synced);
     const batches: WriteBatch[] = [];
