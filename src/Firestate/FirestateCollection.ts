@@ -52,16 +52,16 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
 
   constructor(
     parent: FirestateDocument<any> | FirestateDatabase,
-    options: FirestateCollectionOptions<T, K>
+    options?: Partial<FirestateCollectionOptions<T, K>>
   ) {
     this.parent = parent;
     this.db = parent.db;
-    this.DocumentClass = options.documentClass;
-    this.schema = options.documentSchema;
-    this.collectionName = options.collectionName;
+    this.DocumentClass = options?.documentClass || (this.constructor as any).documentClass;
+    this.schema = options?.documentSchema || (this.constructor as any).schema;
+    this.collectionName = options?.collectionName || (this.constructor as any).collectionName;
     this.path = `${parent.path}/${this.collectionName}`;
 
-    if (options.query) {
+    if (options?.query) {
       this.query = this.createQuery(options.query);
     }
 
