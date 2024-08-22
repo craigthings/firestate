@@ -1,6 +1,6 @@
 import "./styles.css";
 import { observer } from "mobx-react";
-import { TodoDocument } from "../../store/Todo";
+import { TodoDocument } from "../../store/TodoDocument";
 import React from "react";
 
 function Todo(props: { doc: TodoDocument }) {

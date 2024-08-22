@@ -2,118 +2,85 @@
 
 # Firestate
 
-Firestate is a lightweight library that simplifies working with Firestore in TypeScript projects that use MobX for UI reactivity. It provides an easy to use API for managing your Firestore collections and documents while automatically keeping your UI up to date.
+Firestate is a lightweight library that simplifies working with Firestore in TypeScript projects that use MobX for UI reactivity. It provides an easy-to-use API for managing your Firestore collections and documents while automatically keeping your UI up to date.
 
 ## Basic Usage
 
-### 1. Set up Firebase
+### 1. Define your data model
 
-First, initialize your Firebase app and get the Firestore instance:
+Create a document class for your data and add any methods you need to interact with it:
 
 ```ts
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { FirestateDocument } from "../Firestate";
 
-const firebaseConfig = {
-  // Your Firebase configuration
-};
+export class TodoDocument extends FirestateDocument<TodoSchema> {
+  toggleDone = () => {
+    this.update({ done: !this.data.done });
+  };
 
-initializeApp(firebaseConfig);
-const db = getFirestore();
+  setName = (name: string) => {
+    this.update({ name });
+  };
+}
 ```
 
-### 2. Define your data model
+### 2. Create a collection class
 
-Create a schema and document class for your data:
+Configure a collection class for your documents:
 
 ```ts
-import FirestateDocument from "./Firestate/FirestateDocument";
-
-export class TodoSchema {
+// This schema is used as the default values and schema for the documents in the collection
+export class TodoSchema { 
   name = "";
   index = 0;
   done = false;
 }
 
-export class TodoDocument extends FirestateDocument<TodoSchema> {
-  static schema = TodoDefaults;
-  public parent: Todos;
-}
-```
-
-### 3. Create a collection class
-
-Define a collection class for your documents:
-
-```ts
-import FirestateCollection from "./Firestate/FirestateCollection";
-import { TodoDocument, TodoSchema } from "./Todo";
-
-export class Todos extends FirestateCollection<TodoDefaults, TodoDocument> {
+export default class Todos extends FirestateCollection<TodoSchema, TodoDocument> {
   static documentClass = TodoDocument;
+  static documentSchema = TodoSchema;
   static collectionName = "todos";
 
-  public query = this.createQuery((collectionRef) => {
-    return query(collectionRef, orderBy("index"));
-  });
+  setOrderByIndex = () => {
+    this.setQuery(orderBy("index"));
+  };
 
-  create = (name: string, index: number, done: boolean) => {
+  addNew = (name: string, index: number, done: boolean) => {
     this.add({ name, index, done });
   };
 
   remove = async (id: string) => {
-    await this.get(id).delete();
-  };
-
-  getByIndex = (index: number) => {
-    return this.docs.find((todo) => todo.data.index === index);
+    await this.get(id)?.delete();
   };
 }
 ```
 
-### 4. Set up the root store
+### 3. Set up a root store
 
-Create a root store that extends FirestateDatabase:
+Setup firebase and create a root store that uses FirestateDatabase:
 
 ```ts
-import FirestateDatabase from "./Firestate/FirestateDatabase";
 
-class RootStore extends FirestateDatabase {
-  todos: Todos;
+const config = {
+  // Your Firebase configuration
+};
 
-  constructor(db: Firestore) {
-    super(db);
-    this.todos = new Todos(this);
-  }
+initializeApp(config);
+let firestore = getFirestore();
+let db = new FirestateDatabase(firestore);
 
-  async init() {
+class RootStore {
+  todos = new Todos(db);
+
+  init = async () => {
     await this.todos.subscribe();
-  }
+  };
 }
 
-const rootStore = new RootStore(db);
-rootStore.init();
-```
+const store = new RootStore(db);
+store.init();
 
-### 5. Use the store in your application
-
-Now you can use the store to interact with your Firestore data:
-
-```ts
-// Add a new todo
-await rootStore.todos.add({ name: "Buy groceries", done: false });
-
-// Get a todo by ID
-const todo = rootStore.todos.get("someId");
-
-// Update a todo
-await todo.update({ done: true });
-
-// Delete a todo
-await todo.delete();
-
-// Access the todos array
-const allTodos = rootStore.todos.docs;
+export default store;
 ```
 
 ## API Documentation
@@ -122,17 +89,18 @@ const allTodos = rootStore.todos.docs;
 
 #### Properties
 - `docs`: Array<FirestateDocument> - Array of document instances in the collection.
-- `firestoreDocs`: Array<FirestateDocumentData[]> - Array of raw document data.
+- `firestoreDocs`: Array<DocumentSchema> - Array of raw document data.
 - `subscribed`: boolean - Indicates if the collection is currently subscribed to Firestore updates.
 
 #### Methods
-- `subscribe()`: Promise<DocumentType[]> - Subscribes to real-time updates from Firestore.
+- `subscribe()`: Promise<FirestateDocument[]> - Subscribes to real-time updates from Firestore.
 - `unsubscribe()`: void - Unsubscribes from Firestore updates.
-- `add(data: Partial<T>)`: Promise<FirestateDocument<T>> - Adds a new document to the collection.
+- `add(data: Partial<DocumentSchema>)`: Promise<FirestateDocument> - Adds a new document to the collection.
 - `delete(id: string)`: Promise<void> - Deletes a document from the collection.
-- `update(id: string, data: Partial<T>)`: Promise<void> - Updates a document in the collection.
-- `get(id: string)`: FirestateDocument<T> | undefined - Retrieves a document by ID.
+- `update(id: string, data: Partial<DocumentSchema>)`: Promise<void> - Updates a document in the collection.
+- `get(id: string)`: FirestateDocument | undefined - Retrieves a document by ID.
 - `saveLocal()`: Promise<void> - Syncs local changes to Firestore.
+- `setQuery(...queryConstraints: QueryConstraint[])`: Query - Sets a new query for the collection.
 
 ### FirestateDocument
 
@@ -142,10 +110,10 @@ const allTodos = rootStore.todos.docs;
 - `synced`: boolean - Indicates if the document is synced with Firestore.
 
 #### Methods
-- `updateLocal(data: Partial<T>)`: void - Updates the document locally without syncing to Firestore.
+- `updateLocal(data: Partial<DocumentSchema>)`: void - Updates the document locally without syncing to Firestore.
 - `saveLocal()`: Promise<void> - Saves local changes to Firestore.
 - `discardLocal()`: void - Discards local changes and reverts to the last synced state.
-- `update(data: Partial<T>)`: Promise<void> - Updates the document in Firestore.
+- `update(data: Partial<DocumentSchema>)`: Promise<void> - Updates the document in Firestore.
 - `delete()`: Promise<void> - Deletes the document from Firestore.
 
 ### FirestateDatabase

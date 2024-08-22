@@ -1,9 +1,8 @@
 import { FirestateDocument } from "../Firestate";
-import type Todos from "./Todos";
-import { type TodoSchema } from "./Todos";
+import TodosCollection from "./TodoCollection";
+import { type TodoSchema } from "./TodoCollection";
 
-export class TodoDocument extends FirestateDocument<TodoSchema, Todos> {
-
+export class TodoDocument extends FirestateDocument<TodoSchema, TodosCollection> {
   toggleDone = () => {
     this.update({ done: !this.data.done });
   };
