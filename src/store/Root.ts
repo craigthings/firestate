@@ -13,20 +13,19 @@ let config = {
 };
 
 initializeApp(config);
-let db = getFirestore();
+let firestore = getFirestore();
+let db = new FirestateDatabase(firestore);
 
-class Root extends FirestateDatabase {
-  todos = new Todos(this);
+class RootStore {
+  todos = new Todos(db);
 
   init = async () => {
-    let todos = await this.todos.subscribe();
-    Object(window).todos = this.todos;
-    console.log("Loaded. Todos:");
-    console.log(todos);
+    await this.todos.subscribe();
+    console.log('Todos Loaded');;
   };
 }
 
-const store = new Root(db);
+const store = new RootStore();
 
 store.init();
 

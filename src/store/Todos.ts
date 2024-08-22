@@ -1,18 +1,25 @@
 import { FirestateCollection } from "../Firestate";
-import { TodoDocument, TodoDefaults } from "./Todo";
+import { TodoDocument } from "./Todo";
 import { orderBy, query } from "firebase/firestore";
 
-export default class Todos extends FirestateCollection<TodoDefaults, TodoDocument> {
+export class TodoSchema {
+  name = "";
+  index = 0;
+  done = false;
+}
+
+export default class Todos extends FirestateCollection<TodoSchema, TodoDocument> {
   static documentClass = TodoDocument;
+  static documentSchema = TodoSchema;
   static collectionName = "todos";
   public query = this.setQuery(orderBy("done", "asc"));
 
   setOrderByIndex = () => {
-    this.query = this.setQuery(orderBy("index"));
+    this.setQuery(orderBy("index"));
   };
 
   setOrderByDone = () => {
-    this.query = this.setQuery(orderBy("done", "asc"));
+    this.setQuery(orderBy("done", "asc"));
   };
 
   addNew = (name: string, index: number, done: boolean) => {

@@ -66,11 +66,25 @@ export default class FirestateCollection<T, K extends FirestateDocument<T, any>>
 
     // Use static properties if not provided in options
     this.DocumentClass = options?.documentClass || (this.constructor as any).documentClass;
-    this.schema = (this.DocumentClass as any).schema || (this.constructor as any).schema;
     this.collectionName = options?.collectionName || (this.constructor as any).collectionName;
 
+    // Check for schema in collection and document
+    const collectionSchema = (this.constructor as any).documentSchema;
+    const documentSchema = this.DocumentClass.schema;
+
+    if (collectionSchema && documentSchema) {
+      console.warn('Schema defined in both collection and document. Using collection schema.');
+      this.schema = collectionSchema;
+    } else if (collectionSchema) {
+      this.schema = collectionSchema;
+    } else if (documentSchema) {
+      this.schema = documentSchema;
+    } else {
+      throw new Error('Schema must be defined either in the collection or in the document');
+    }
+
     if (!this.DocumentClass || !this.schema || !this.collectionName) {
-      throw new Error('documentClass, schema, and collectionName must be provided either as static properties or in the options');
+      throw new Error('documentClass, schema, and collectionName must be provided');
     }
 
     this.path = `${parent.path}/${this.collectionName}`;

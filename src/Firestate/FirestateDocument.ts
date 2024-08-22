@@ -45,7 +45,7 @@ export default class FirestateDocument<T, P extends FirestateCollection<T, any> 
     this.db = parent.db;
     this.path = `${parent.path}/${id}`;
     this.id = id;
-    this.schema = new ((this.constructor as typeof FirestateDocument).schema)();
+    this.schema = (this.parent.constructor as any).documentSchema ? new ((this.parent.constructor as any).documentSchema)() : new ((this.constructor as typeof FirestateDocument).schema)();
 
     if (data) {
       this._updateData(data);

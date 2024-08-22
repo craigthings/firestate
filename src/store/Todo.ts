@@ -1,14 +1,8 @@
 import { FirestateDocument } from "../Firestate";
 import type Todos from "./Todos";
+import { type TodoSchema } from "./Todos";
 
-export class TodoDefaults {
-  name = "";
-  index = 0;
-  done = false;
-}
-
-export class TodoDocument extends FirestateDocument<TodoDefaults> {
-  static schema = TodoDefaults;
+export class TodoDocument extends FirestateDocument<TodoSchema, Todos> {
 
   toggleDone = () => {
     this.update({ done: !this.data.done });
