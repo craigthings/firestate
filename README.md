@@ -6,27 +6,9 @@ Firestate is a lightweight library that simplifies working with Firestore in Typ
 
 ## Basic Usage
 
-### 1. Define your data model
+### 1. Define a collection and schema
 
-Create a document class for your data and add any methods you need to interact with it:
-
-```ts
-import { FirestateDocument } from "../Firestate";
-
-export class TodoDocument extends FirestateDocument<TodoSchema> {
-  toggleDone = () => {
-    this.update({ done: !this.data.done });
-  };
-
-  setName = (name: string) => {
-    this.update({ name });
-  };
-}
-```
-
-### 2. Create a collection class
-
-Configure a collection class for your documents:
+A `FirestateCollection` represents a collection of documents in Firestore. It provides methods for subscribing to real-time updates, adding, updating, and deleting documents, and setting queries.
 
 ```ts
 // This schema is used as the default values and schema for the documents in the collection
@@ -55,9 +37,27 @@ export default class Todos extends FirestateCollection<TodoSchema, TodoDocument>
 }
 ```
 
-### 3. Set up a root store
+### 1. Define a document class
 
-Setup firebase and create a root store that uses FirestateDatabase:
+`FirestateDocument` is a class that represents a document in Firestore and provides familiar methods for interacting with it a Firestore document. `FirestateCollection` will create instances of this class for each document in the collection.
+
+```ts
+import { FirestateDocument } from "../Firestate";
+
+export class TodoDocument extends FirestateDocument<TodoSchema> {
+  toggleDone = () => {
+    this.update({ done: !this.data.done });
+  };
+
+  setName = (name: string) => {
+    this.update({ name });
+  };
+}
+```
+
+### 3. Add your collection to your store
+
+Setup firebase and add your `FirestateCollection` to your store.
 
 ```ts
 
@@ -73,7 +73,8 @@ class RootStore {
   todos = new Todos(db);
 
   init = async () => {
-    await this.todos.subscribe();
+    await this.todos.subscribe(); // Loads and subscribes to the collection for real-time updates
+    console.log("Todos loaded.");
   };
 }
 
@@ -88,12 +89,12 @@ export default store;
 ### FirestateCollection
 
 #### Properties
-- `docs`: Array<FirestateDocument> - Array of document instances in the collection.
+- `docs`: Array<FirestateDocument> - Array of Firestate Documents in the collection.
 - `firestoreDocs`: Array<DocumentSchema> - Array of raw document data.
 - `subscribed`: boolean - Indicates if the collection is currently subscribed to Firestore updates.
 
 #### Methods
-- `subscribe()`: Promise<FirestateDocument[]> - Subscribes to real-time updates from Firestore.
+- `subscribe()`: Promise<FirestateDocument[]> - Subscribes to real-time updates from Firestore. Can be awaited to ensure the collection is fully loaded before continuing.
 - `unsubscribe()`: void - Unsubscribes from Firestore updates.
 - `add(data: Partial<DocumentSchema>)`: Promise<FirestateDocument> - Adds a new document to the collection.
 - `delete(id: string)`: Promise<void> - Deletes a document from the collection.
